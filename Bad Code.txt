@@ -1,0 +1,276 @@
+#include <iostream>
+#include <ios>
+#include <iomanip>
+#include <string>
+using namespace std;
+
+
+/*
+**Walin's real name**
+Section 3
+2 / 8 / 19
+
+Lab 4
+
+A Plinko simulator. It asks for inputs, calculates a potential outcome, along with winnings, and repeats.
+Included is a menu, a single chip simulator, and a multiple-chip simulator.
+*/
+const int NUM_OF_ROWS = 12;
+const int NUM_OF_SLOTS = 9;
+const int SLOT_WINNINGS[NUM_OF_SLOTS] = {100, 500, 1000, 0, 10000, 0, 1000, 500, 100};
+int CheckConstantValidity();
+int GetUserInput(int promptType);
+double ComputeWinnings(double chipSpot);
+double DropOneChip(int slotSelection, double singleChipPath[]);
+double DropMoreChips(int numChips, int slotSelection);
+
+
+int main() {
+	//Variables -- Menu Options enum used to choose options
+	//------The following constants are magic numbers for remembering the right input prompt.
+	const int MENU_OPTIONS = 1;
+	const int SLOT_CHOICE = 2;
+	const int CHIP_NUMBER = 3;
+	//------The following constants are magic numbers for remembering which menu option has been selected.
+	const int SINGLE_CHIP = 1;
+	const int MULTI_CHIP = 2;
+	const int MULTI_CHIP_ALL_SLOTS = 3;
+	const int SHOW_MENU = 4;
+	const int QUIT_PROGRAM = 5;
+	//Win Amounts
+	//Seed Variable
+	const int SEED = 42;
+	//Random Seed Generator
+	srand(SEED);
+
+	int menuSelection = 0;
+	int slotSelection = 0;
+	double chipSpot = 0.0;
+	double singleChipPath[NUM_OF_ROWS];
+
+	int numOfChips = 0;
+	double prizeMoney = 0.0;
+
+
+	/*if (CheckConstantValidity() == -1) {
+		return -1;
+	}*/
+	
+	cout << setprecision(2) << fixed;
+	
+
+	cout << "Welcome to the Plinko simulator!  Enter 4 to see options.";
+	cout << endl << endl;
+	//Press 4 to start
+
+	do {
+		
+		menuSelection = GetUserInput(MENU_OPTIONS);
+		
+
+		//Single Chip Case
+
+		if (menuSelection == SINGLE_CHIP) {
+			cout << "*** Drop a single chip ***" << endl << endl;
+
+			
+
+			slotSelection = GetUserInput(SLOT_CHOICE);
+
+			//CALCULATIONS & OUTPUT -- SINGLE
+			cout << "*** Dropping chip into slot " << slotSelection << " ***" << endl;
+			chipSpot = static_cast<double>(slotSelection);
+			cout << "Path: [";
+			cout << fixed << setprecision(1);
+			cout << chipSpot;
+			cout << ", ";
+
+			prizeMoney = DropOneChip(chipSpot, singleChipPath); //I compute prizeMoney earlier than I need to, because I need to modify the chip path array in order to print the path.
+			for (int i = 0; i < NUM_OF_ROWS - 1; ++i) { //This prints the path of the chip.
+				cout << singleChipPath[i] << ", ";
+			}
+			cout << singleChipPath[NUM_OF_ROWS - 1]; //Printing this outside of the loop lets me avoid adding an unnecessary comma.
+			cout << "]" << endl;
+
+
+		
+			cout << "Winnings: $";
+			cout << setprecision(2);
+			cout << prizeMoney;
+			cout << endl << endl;
+			prizeMoney = 0.0; //This resets prizeMoney for the next round of chip dropping, just in case.
+
+			continue;
+		}
+
+		//Multiple Chip Case
+		if (menuSelection == MULTI_CHIP) {
+			cout << "*** Drop multiple chips ***" << endl;
+			cout << endl;
+
+			numOfChips = GetUserInput(CHIP_NUMBER);
+			slotSelection = GetUserInput(SLOT_CHOICE);
+			
+			prizeMoney = DropMoreChips(numOfChips, slotSelection);
+			cout << "Total winnings on " << numOfChips << " chips: $";
+			cout << setprecision(2);
+			cout << prizeMoney;
+			cout << endl;
+
+			cout << "Average winnings per chip: $";
+			cout << prizeMoney / numOfChips;
+			prizeMoney = 0.0;
+
+			cout << endl << endl;
+			continue;
+		}
+
+		if (menuSelection == MULTI_CHIP_ALL_SLOTS) {
+			cout << "*** Sequentially drop multiple chips ***" << endl << endl;
+			cout << fixed << setprecision(2);
+			numOfChips = GetUserInput(CHIP_NUMBER);
+			for (int i = 0; i < NUM_OF_SLOTS; ++i) {
+				prizeMoney = DropMoreChips(numOfChips, -1);
+				cout << "Total Winnings on " << numOfChips << " chips in slot " << i << ": $" << prizeMoney << endl;
+				cout << "Average winnings per chip: $" << prizeMoney / numOfChips << endl << endl;
+			}
+		}
+
+		//Replay the menu
+		if (menuSelection == SHOW_MENU) {
+			cout << "Menu: Please select one of the following options: " << endl << endl;
+			cout << "1 - Drop a single chip into one slot" << endl;
+			cout << "2 - Drop multiple chips into one slot" << endl;
+			cout << "3 - Drop multiple chips into each slot" << endl;
+			cout << "4 - Show the options menu" << endl;
+			cout << "5 - Quit the program" << endl;
+			continue;
+		}
+
+		if (menuSelection == QUIT_PROGRAM) {
+			cout << "Goodbye!" << endl;
+		}
+
+	} while (menuSelection != QUIT_PROGRAM);
+
+
+
+	return 0;
+}
+
+int CheckConstantValidity() {
+	if (NUM_OF_ROWS % 2 == 1) {
+		return -1;
+	}
+	if (NUM_OF_SLOTS % 2 == 0) {
+		return -1;
+	}
+	if (sizeof(SLOT_WINNINGS) != NUM_OF_SLOTS) {
+		return -1;
+	}
+	return 0;
+}
+int GetUserInput(int inputType) {
+	//The following constants mirror the ones in main() to improve readability.
+	const int MENU_OPTIONS = 1;
+	const int SLOT_CHOICE = 2;
+	const int CHIP_NUMBER = 3;
+	int userInput = 0;
+	bool inputValid = false;
+
+	if (inputType == MENU_OPTIONS) {
+		while (!inputValid) {
+			cin.clear();
+			cout << "Enter your selection now:";
+			cin >> userInput;
+			cout << endl << endl;
+			inputValid = true;
+			if ((userInput < 1) || (userInput > 5)) {
+				cout << "Invalid selection.  Enter 4 to see options." << endl << endl;
+				inputValid = false;
+			}
+		}
+	}
+	else if (inputType == SLOT_CHOICE) {
+		while(!inputValid) {
+			cout << "Which slot do you want to drop the chip in (0-" << NUM_OF_SLOTS - 1 << ")?";
+			cin >> userInput;
+			cout << endl << endl;
+			inputValid = true;
+			if ((userInput < 0) || (userInput > NUM_OF_SLOTS - 1)) {
+				cout << "Invalid slot." << endl << endl;
+				inputValid = false;
+			}
+		}
+	}
+	else if (inputType == CHIP_NUMBER) {
+		while (!inputValid) {
+			cout << "How many chips do you want to drop (>0)?";
+			cin >> userInput;
+			cout << endl << endl;
+			inputValid = true;
+			if (userInput < 1) {
+				cout << "Invalid number of chips." << endl << endl;
+				inputValid = false;
+			}
+		}
+	}
+	
+	return userInput;
+}
+double ComputeWinnings(double chipSpot) {
+	double prizeMoney = 0.0; //Initializing this just in case
+	for (int i = 0; i < NUM_OF_SLOTS; ++i) {
+		if (chipSpot == static_cast<double>(i)) {
+			prizeMoney = SLOT_WINNINGS[i];
+		}
+	}
+	return prizeMoney;
+}
+double DropOneChip(int slotSelection, double singleChipPath[]) {
+	double chipSpot = static_cast<double>(slotSelection);
+	
+	for (int i = 0; i < NUM_OF_ROWS; ++i)
+	{
+		if (chipSpot == 0.0)
+		{
+			chipSpot = chipSpot + 0.5;
+		}
+
+		else if (chipSpot == NUM_OF_SLOTS - 1)
+		{
+			chipSpot = chipSpot - 0.5;
+		}
+
+		else
+		{
+			chipSpot = chipSpot + (rand() % 2) - 0.5;
+		}
+		singleChipPath[i] = chipSpot;
+	}
+	return ComputeWinnings(chipSpot);
+}
+double DropMoreChips(int numChips, int slotSelection = -1) {
+	double tempPath[NUM_OF_ROWS];//This array is created just so DropOneChip can be used without error.
+	double prizeMoney = 0.0;
+	if (slotSelection == -1) {//This usage of the default value for slotSelection allows Option 3 to be used without creating a new function--just use only numChips as an argument.
+		for (int i = 0; i < NUM_OF_SLOTS; ++i) {
+			for (int j = 0; j < numChips; ++j) {
+				prizeMoney += DropOneChip(i, tempPath);
+				if (DropOneChip(i, tempPath) == -1) {
+					return -1;
+				}
+			}
+		}
+	}
+	else {
+		for (int i = 0; i < numChips; ++i) {
+			prizeMoney += DropOneChip(slotSelection, tempPath);
+			if (DropOneChip(slotSelection, tempPath) == -1) {
+				return -1;
+			}
+		}
+	}
+	
+	return prizeMoney;
+}
